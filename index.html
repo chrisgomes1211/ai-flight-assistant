@@ -1412,33 +1412,38 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
     ]);
   }
 
-  // ── AI / Gemini ──
-  const GEMINI_KEY = 'AQ.Ab8RN6KcRSxJpVbI3AArvtaodYj0OozuUru8Fxe8r-nfrDVprA';
+  // ── AI / Groq ──
+  const GROQ_KEY = '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';
 
-  async function askGemini(userMsg) {
-    const body = {
-      contents: [{
-        role: 'user', parts: [{ text: `You are SkyWing Chat, a friendly airline assistant for SkyWing Airlines. 
+  async function askAI(userMsg) {
+    const system = `You are SkyWing Chat, a friendly airline assistant for SkyWing Airlines.
 Be concise (2-4 sentences), warm, and helpful.
 SkyWing flight SK456 goes Bangkok → Singapore on Jun 30, 2026 at 14:30, Gate B12.
 If the user asks about booking, seats, baggage, check-in, or flight status, suggest tapping the relevant option.
 If they ask general travel or flight questions, answer helpfully.
-Do not make up specific booking details for individuals.` }]
-      }, {
-        role: 'user', parts: [{ text: userMsg }]
-      }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+Do not make up specific booking details for individuals.`;
+    const body = {
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userMsg }
+      ],
+      temperature: 0.7,
+      max_tokens: 300
     };
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_KEY}`, {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`
+      },
       body: JSON.stringify(body)
     });
     const data = await resp.json();
     if (!resp.ok) {
       throw new Error(data.error?.message || `HTTP ${resp.status}`);
     }
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Hmm, I got nothing. Try again!';
+    return data.choices?.[0]?.message?.content || 'Hmm, I got nothing. Try again!';
   }
 
   // ── Fallback ──
@@ -1452,7 +1457,7 @@ Do not make up specific booking details for individuals.` }]
     }
     await typing(1200);
     try {
-      const reply = await askGemini(lastMsg);
+      const reply = await askAI(lastMsg);
       voiceTriggered = true;
       botMsg(reply, { tw: true });
       setQR(mainQR());
@@ -1527,7 +1532,7 @@ Do not make up specific booking details for individuals.` }]
     if (e.key === 'Enter') { e.preventDefault(); const t = iEl.value.trim(); if (!t || busy) { if (!t) shakeEl(iEl); return; } burstPlane(); handleInput(t); }
   });
 
-  // ── Note: Gemini AI key is built-in — no setup needed ──
+  // ── Note: Groq AI key is built-in — no setup needed ──
 
   init();
 })();
