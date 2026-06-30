@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SkyWing Chat ✈️</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif; }
+body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+/* ── Background Paper Planes ── */
+.paper-plane { position: fixed; z-index: 0; opacity: 0.10; pointer-events: none; }
+.paper-plane svg { width: 100%; height: 100%; fill: #1A2A3A; }
+.pp1 { top: 8%; left: -60px; width: 80px; animation: fly1 24s linear infinite; }
+.pp2 { top: 28%; left: -40px; width: 50px; animation: fly2 30s linear infinite 4s; }
+.pp3 { top: 52%; left: -70px; width: 65px; animation: fly3 26s linear infinite 8s; }
+.pp4 { bottom: 12%; left: -50px; width: 45px; animation: fly2 32s linear infinite 14s; }
+@keyframes fly1 { 0% { transform: translateX(-60px) translateY(0) rotate(0deg) scale(0.8); } 25% { transform: translateX(25vw) translateY(-40px) rotate(5deg) scale(1); } 50% { transform: translateX(50vw) translateY(20px) rotate(-3deg) scale(0.9); } 75% { transform: translateX(75vw) translateY(-30px) rotate(4deg) scale(1); } 100% { transform: translateX(calc(100vw + 100px)) translateY(10px) rotate(0deg) scale(0.8); } }
+@keyframes fly2 { 0% { transform: translateX(-40px) translateY(0) rotate(-5deg) scale(0.7); } 33% { transform: translateX(30vw) translateY(50px) rotate(0deg) scale(0.9); } 66% { transform: translateX(65vw) translateY(-20px) rotate(3deg) scale(1); } 100% { transform: translateX(calc(100vw + 100px)) translateY(30px) rotate(-2deg) scale(0.7); } }
+@keyframes fly3 { 0% { transform: translateX(-70px) translateY(0) rotate(3deg) scale(0.6); } 30% { transform: translateX(35vw) translateY(-60px) rotate(-2deg) scale(0.9); } 60% { transform: translateX(60vw) translateY(30px) rotate(5deg) scale(1); } 100% { transform: translateX(calc(100vw + 100px)) translateY(-50px) rotate(-3deg) scale(0.7); } }
+
+/* ── Chat Container ── */
+.chat-container { position: relative; z-index: 1; width: 100%; height: 100%; max-width: 420px; max-height: 780px; background: #FFFFFF; border-radius: 24px; box-shadow: 0 20px 60px rgba(26,42,58,0.15), 0 8px 24px rgba(26,42,58,0.08); display: flex; flex-direction: column; overflow: hidden; margin: 16px; }
+
+/* ── Header ── */
+.header { background: linear-gradient(135deg, #4AB8EB 0%, #2E95D3 100%); padding: 18px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; position: relative; overflow: hidden; }
+.header::after { content: ''; position: absolute; top: -50%; right: -20%; width: 120px; height: 120px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+.header-icon { font-size: 26px; line-height: 1; animation: rock 3s ease-in-out infinite; }
+@keyframes rock { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+.header-text { flex: 1; }
+.header-title { font-size: 17px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.3px; }
+.header-sub { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 400; }
+.header-badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; color: #FFFFFF; letter-spacing: 0.3px; }
+
+/* ── Chat Messages ── */
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; background: #FAFCFE; }
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: #D0D8E0; border-radius: 4px; }
+
+.message { max-width: 80%; animation: msgIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; line-height: 1.45; font-size: 14.5px; position: relative; }
+@keyframes msgIn { from { opacity: 0; transform: scale(0.85) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.message.bot { align-self: flex-start; background: #F0F6FA; color: #1A2A3A; border-radius: 18px 18px 18px 4px; padding: 12px 16px; border-bottom-left-radius: 4px; }
+.message.user { align-self: flex-end; background: linear-gradient(135deg,#4AB8EB,#2E95D3); color: #FFFFFF; border-radius: 18px 18px 4px 18px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(46,149,211,0.3); animation: msgInUser 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes msgInUser { from { opacity: 0; transform: scale(0.85) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.message.system { align-self: center; background: transparent; color: #90A4AE; font-size: 12px; padding: 4px 8px; max-width: 90%; text-align: center; }
+
+/* ── Typing Indicator ── */
+.typing-indicator { display: none; align-self: flex-start; background: #F0F6FA; border-radius: 18px 18px 18px 4px; padding: 10px 16px; width: 64px; height: 36px; align-items: center; justify-content: center; gap: 4px; }
+.typing-indicator.show { display: flex; }
+.typing-dot { width: 8px; height: 8px; background: #B0BEC5; border-radius: 50%; animation: bounce 1.2s ease-in-out infinite; }
+.typing-dot:nth-child(1) { animation-delay: 0ms; }
+.typing-dot:nth-child(2) { animation-delay: 200ms; }
+.typing-dot:nth-child(3) { animation-delay: 400ms; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+/* ── Quick Reply Tray ── */
+.quick-reply-tray { display: none; flex-shrink: 0; padding: 8px 14px; background: #FAFCFE; border-top: 1px solid #ECF0F2; gap: 6px; flex-wrap: wrap; }
+.quick-reply-tray.show { display: flex; }
+.qr-btn { flex-shrink: 0; height: 44px; padding: 0 20px; border-radius: 22px; border: 1px solid #DEE2E6; background: #FFFFFF; color: #1A2A3A; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; display: flex; align-items: center; gap: 6px; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
+.qr-btn:active { transform: scale(0.95); }
+.qr-btn:hover { border-color: #FF7A2F; color: #FF7A2F; }
+.qr-btn.active { background: #FF7A2F; border-color: #FF7A2F; color: #FFFFFF; }
+.qr-btn-main { background: #F0F6FA; border-color: transparent; font-size: 13px; }
+.qr-btn-main:hover { background: #E3ECF3; border-color: transparent; color: #1A2A3A; }
+
+/* ── Input Bar ── */
+.input-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px 14px; background: #FFFFFF; border-top: 1px solid #ECF0F2; flex-shrink: 0; }
+.input-bar input { flex: 1; height: 44px; border-radius: 22px; border: 1.5px solid #DEE2E6; padding: 0 18px; font-size: 14.5px; outline: none; transition: border-color 0.2s; background: #F8FAFB; }
+.input-bar input:focus { border-color: #4AB8EB; background: #FFFFFF; }
+.input-bar input::placeholder { color: #B0BEC5; }
+.send-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: linear-gradient(135deg,#FF7A2F,#E06620); color: #FFFFFF; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; box-shadow: 0 2px 8px rgba(255,122,47,0.3); }
+.send-btn:active { transform: scale(0.92); }
+.send-btn:disabled { opacity: 0.4; transform: none; box-shadow: none; }
+
+/* ── Mic Button ── */
+.mic-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #78909C;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.mic-btn:hover { background: #F0F6FA; color: #1A2A3A; }
+.mic-btn:active { transform: scale(0.92); }
+.mic-btn.listening {
+  background: #FF7A2F;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 0 rgba(255,122,47,0.3);
+  animation: micPulse 1.2s ease-in-out infinite;
+}
+@keyframes micPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,122,47,0.4); }
+  50% { box-shadow: 0 0 0 14px rgba(255,122,47,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,122,47,0); }
+}
+.mic-btn.processing {
+  background: #78909C;
+  color: #FFFFFF;
+  pointer-events: none;
+}
+
+/* ── Avatar Speaking ── */
+.bot-avatar.speaking {
+  animation: avatarSpeak 0.5s ease-in-out infinite alternate;
+  box-shadow: 0 0 0 3px rgba(255,122,47,0.4), 0 2px 12px rgba(255,122,47,0.3);
+}
+@keyframes avatarSpeak {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+
+/* ── Header Status ── */
+.header-badge.speaking {
+  background: #2ECC71;
+  animation: statusPulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes statusPulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+/* ── Seat Map ── */
+.seat-map { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; width: 100%; }
+.seat { display: flex; align-items: center; justify-content: center; height: 32px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; user-select: none; }
+.seat.available { background: #E8F5E9; color: #2ECC71; border-color: #C8E6C9; }
+.seat.available:hover { background: #2ECC71; color: #FFFFFF; transform: scale(1.08); }
+.seat.available.selected { background: #FF7A2F; color: #FFFFFF; border-color: #FF7A2F; transform: scale(1.04); box-shadow: 0 2px 8px rgba(255,122,47,0.25); }
+.seat.taken { background: #ECEFF1; color: #B0BEC5; cursor: not-allowed; }
+.seat.yours { background: #4AB8EB; color: #FFFFFF; cursor: default; }
+.seat.aisle { background: transparent; cursor: default; border: none; }
+.seat-label { display: none; }
+.seat-legend { display: flex; gap: 14px; margin-top: 8px; font-size: 11px; color: #78909C; flex-wrap: wrap; }
+.seat-legend span { display: flex; align-items: center; gap: 4px; }
+.seat-legend .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* ── Baggage Card ── */
+.baggage-card { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.baggage-card .br { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F0F4F8; }
+.baggage-card .br:last-child { border-bottom: none; }
+.baggage-card .bl { font-size: 13px; color: #78909C; }
+.baggage-card .bv { font-size: 13px; font-weight: 600; color: #1A2A3A; }
+.baggage-card .price { color: #FF7A2F; font-weight: 700; }
+.baggage-card .add-bag-btn { background: #F0F6FA; border: none; padding: 4px 12px; border-radius: 14px; font-size: 11px; font-weight: 600; color: #1A2A3A; cursor: pointer; transition: 0.15s; }
+.baggage-card .add-bag-btn:active { transform: scale(0.95); }
+
+/* ── Flight Status Card ── */
+.flight-card { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.flight-card .fr { font-size: 16px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; }
+.flight-card .fd { font-size: 12px; color: #78909C; margin-bottom: 10px; }
+.flight-card .fs-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #1A2A3A; }
+.flight-card .fs-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
+.flight-card .fs-badge.ot { background: #E8F5E9; color: #2ECC71; }
+.flight-card .fg { background: #F0F6FA; padding: 3px 10px; border-radius: 12px; }
+
+/* ── Confirm Badge ── */
+.c-badge { display: inline-flex; align-items: center; gap: 4px; background: #E8F5E9; color: #2ECC71; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+/* ── Check-in Card ── */
+.checkin-card { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; text-align: center; }
+.checkin-card .ci { font-size: 32px; margin-bottom: 6px; }
+.checkin-card .ct { font-size: 16px; font-weight: 700; color: #1A2A3A; }
+.checkin-card .cs { font-size: 13px; color: #78909C; margin-top: 4px; }
+
+/* ── Responsive ── */
+@media (max-width: 460px) {
+  .chat-container { margin: 0; border-radius: 0; max-height: 100%; max-width: 100%; height: 100%; }
+  .header { padding: 14px 16px; }
+  .chat-messages { padding: 12px; }
+  .input-bar { padding: 8px 12px 12px; }
+}
+@media (min-width: 768px) {
+  .chat-container { height: 90vh; }
+}
+
+/* ── Bot Message Restructure ── */
+.message.bot {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 88%;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border-bottom-left-radius: 0;
+  align-self: flex-start;
+}
+.message.bot .bubble {
+  background: #F0F6FA;
+  color: #1A2A3A;
+  border-radius: 18px 18px 18px 4px;
+  padding: 12px 16px;
+  line-height: 1.45;
+  font-size: 14.5px;
+}
+.message.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg,#4AB8EB,#2E95D3);
+  color: #FFFFFF;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(46,149,211,0.3);
+}
+
+/* ── Bot Avatar ── */
+.bot-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF7A2F, #E06620);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(255,122,47,0.25);
+  animation: avatarPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.bot-avatar svg { width: 16px; height: 16px; fill: #FFFFFF; }
+@keyframes avatarPop {
+  0% { opacity: 0; transform: scale(0) rotate(-20deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ── Typewriter ── */
+.tw-cursor {
+  display: inline-block;
+  animation: twBlink 0.6s step-end infinite;
+  color: #4AB8EB;
+  font-weight: 300;
+  margin-left: 1px;
+}
+@keyframes twBlink { 50% { opacity: 0; } }
+
+/* ── Confetti ── */
+.confetti-container {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 10000;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute; top: -10px;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+/* ── Plane Burst ── */
+.plane-burst {
+  position: fixed; pointer-events: none; z-index: 9999;
+  font-size: 22px;
+  animation: planeFly 0.8s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+}
+@keyframes planeFly {
+  0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(200px,-100px) rotate(15deg) scale(0); opacity: 0; }
+}
+
+/* ── Shake ── */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.shake { animation: shake 0.4s ease; }
+
+/* ── Ripple ── */
+.ripple {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  transform: scale(0);
+  animation: rippleAnim 0.6s ease-out;
+  pointer-events: none;
+}
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+.send-btn { position: relative; overflow: hidden; }
+.qr-btn { position: relative; overflow: hidden; }
+
+/* ── Flight Tracker ── */
+.flight-detail { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.fd-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.fd-flight { font-size: 20px; font-weight: 700; color: #1A2A3A; }
+.fd-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.2px; }
+.fd-status.ot { background: #E8F5E9; color: #2ECC71; }
+.fd-status.dl { background: #FFF3E0; color: #FF7A2F; }
+.fd-status.bo { background: #E3F2FD; color: #4AB8EB; animation: pulseStatus 1s ease-in-out infinite; }
+.fd-status.dp { background: #F3E5F5; color: #9C27B0; }
+.fd-status.ar { background: #E8F5E9; color: #2ECC71; }
+@keyframes pulseStatus { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.fd-route { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #F0F4F8; border-bottom: 1px solid #F0F4F8; margin-bottom: 10px; }
+.fd-city { flex: 1; }
+.fd-iata { font-size: 22px; font-weight: 700; color: #1A2A3A; }
+.fd-name { font-size: 11px; color: #78909C; margin-top: 1px; }
+.fd-time { font-size: 13px; font-weight: 600; color: #1A2A3A; margin-top: 4px; }
+.fd-arrow { font-size: 24px; color: #B0BEC5; margin: 0 4px; }
+.fd-delay { color: #FF7A2F; font-weight: 700; font-size: 11px; }
+.fd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; }
+.fd-item { display: flex; justify-content: space-between; padding: 4px 0; color: #78909C; }
+.fd-item .fd-val { color: #1A2A3A; font-weight: 600; }
+.fd-foot { font-size: 10px; color: #B0BEC5; margin-top: 10px; padding-top: 8px; border-top: 1px solid #F0F4F8; display: flex; justify-content: space-between; }
+
+/* ── Departure Board ── */
+.dep-board { background: #FFFFFF; border-radius: 14px; padding: 12px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.db-header { font-size: 14px; font-weight: 700; color: #1A2A3A; padding-bottom: 8px; border-bottom: 2px solid #FF7A2F; margin-bottom: 4px; display: flex; justify-content: space-between; }
+.db-row { display: grid; grid-template-columns: 50px 1fr 60px 44px 50px; align-items: center; gap: 6px; padding: 7px 4px; border-bottom: 1px solid #F5F7F9; font-size: 12px; }
+.db-row:last-child { border-bottom: none; }
+.db-flight { font-weight: 700; color: #1A2A3A; }
+.db-route { color: #546E7A; font-size: 11px; }
+.db-time { font-weight: 600; color: #1A2A3A; text-align: center; }
+.db-gate { color: #78909C; text-align: center; font-size: 11px; }
+.db-status { text-align: right; font-size: 11px; font-weight: 700; }
+.db-status.ot { color: #2ECC71; }
+.db-status.dl { color: #FF7A2F; }
+.db-status.bo { color: #4AB8EB; }
+.db-status.dp { color: #9C27B0; }
+.db-header-row { color: #90A4AE; font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 6px 4px; border-bottom: 1px solid #E8EDF2; }
+
+/* ── Scanning Indicator ── */
+.scan-line { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 12px; color: #78909C; }
+.scan-dot { width: 8px; height: 8px; border-radius: 50%; background: #4AB8EB; animation: scanPulse 0.8s ease-in-out infinite; }
+@keyframes scanPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(74,184,235,0.4); } 50% { box-shadow: 0 0 0 8px rgba(74,184,235,0); } }
+.scan-line .tick { color: #2ECC71; font-weight: 700; }
+
+/* ── Countdown ── */
+.header-cd { font-size: 10px; color: rgba(255,255,255,0.85); font-weight: 500; letter-spacing: 0.2px; }
+
+/* ── Trip Card ── */
+.trip-card { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.tc-header { font-size: 16px; font-weight: 700; color: #1A2A3A; margin-bottom: 2px; }
+.tc-sub { font-size: 12px; color: #78909C; margin-bottom: 10px; }
+.tc-section { padding: 8px 0; border-top: 1px solid #F0F4F8; }
+.tc-section:first-of-type { border-top: none; }
+.tc-sh { font-size: 13px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.tc-item { font-size: 12px; color: #546E7A; padding: 2px 0 2px 22px; line-height: 1.5; }
+.tc-item strong { color: #1A2A3A; }
+.tc-badge { display: inline-block; background: #E3F2FD; color: #4AB8EB; font-size: 10px; font-weight: 600; padding: 1px 8px; border-radius: 10px; margin-left: 6px; }
+
+/* ── Guide Card ── */
+.guide-card { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.gc-header { font-size: 16px; font-weight: 700; color: #1A2A3A; margin-bottom: 2px; }
+.gc-sub { font-size: 11px; color: #78909C; margin-bottom: 8px; }
+.gc-section { padding: 6px 0; }
+.gc-sh { font-size: 13px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; }
+.gc-row { display: flex; gap: 8px; padding: 3px 0; font-size: 12px; color: #546E7A; align-items: flex-start; }
+.gc-icon { flex-shrink: 0; width: 18px; text-align: center; }
+.gc-label { color: #78909C; min-width: 60px; flex-shrink: 0; }
+.gc-tip { padding: 3px 0 3px 18px; font-size: 12px; color: #546E7A; line-height: 1.5; }
+
+/* ── Lounge Card ── */
+.lounge-card { background: linear-gradient(135deg, #1A2A3A 0%, #2C3E50 100%); border-radius: 16px; padding: 16px; margin-top: 6px; width: 100%; color: #FFFFFF; }
+.lc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.lc-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+.lc-badge { background: #FF7A2F; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 8px; letter-spacing: 0.5px; }
+.lc-flight { font-size: 12px; color: rgba(255,255,255,0.65); margin-bottom: 10px; }
+.lc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.lc-item { font-size: 11px; }
+.lc-item .lc-lbl { color: rgba(255,255,255,0.5); }
+.lc-item .lc-val { color: #FFFFFF; font-weight: 600; margin-top: 1px; }
+.lc-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.lc-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #FF7A2F, #4AB8EB); border-radius: 2px; }
+
+/* ── Ride Card ── */
+.ride-card { background: #FFFFFF; border-radius: 14px; padding: 14px; border: 1px solid #E8EDF2; margin-top: 6px; width: 100%; }
+.rc-header { font-size: 16px; font-weight: 700; color: #1A2A3A; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.rc-route { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #78909C; margin-bottom: 10px; padding: 6px 0; border-top: 1px solid #F0F4F8; border-bottom: 1px solid #F0F4F8; }
+.rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rc-dot.from { background: #4AB8EB; }
+.rc-dot.to { background: #FF7A2F; }
+.rc-line { width: 2px; height: 20px; background: #DEE2E6; flex-shrink: 0; margin-left: 3px; }
+.rc-opt { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F5F7F9; }
+.rc-opt:last-child { border-bottom: none; }
+.rc-info { display: flex; flex-direction: column; }
+.rc-name { font-size: 14px; font-weight: 600; color: #1A2A3A; }
+.rc-desc { font-size: 11px; color: #78909C; }
+.rc-price { font-size: 15px; font-weight: 700; color: #FF7A2F; }
+.rc-book { background: #4AB8EB; color: #FFFFFF; border: none; padding: 4px 14px; border-radius: 14px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+.rc-book:active { transform: scale(0.95); }
+.rc-book:disabled { opacity: 0.4; cursor: default; }
+.rc-foot { font-size: 11px; color: #90A4AE; margin-top: 8px; padding-top: 6px; border-top: 1px solid #F0F4F8; }
+
+/* ── Settings ── */
+.settings-overlay { display: none; position: fixed; inset: 0; background: rgba(26,42,58,0.4); z-index: 9999; align-items: center; justify-content: center; }
+.settings-overlay.show { display: flex; }
+.settings-modal { background: #FFFFFF; border-radius: 20px; padding: 24px; width: 340px; max-width: 90vw; box-shadow: 0 20px 60px rgba(26,42,58,0.2); }
+.sm-title { font-size: 18px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; }
+.sm-desc { font-size: 13px; color: #78909C; margin-bottom: 16px; line-height: 1.5; }
+.sm-input { width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #DEE2E6; padding: 0 14px; font-size: 14px; outline: none; transition: 0.2s; box-sizing: border-box; }
+.sm-input:focus { border-color: #4AB8EB; }
+.sm-input::placeholder { color: #B0BEC5; }
+.sm-actions { display: flex; gap: 8px; margin-top: 14px; }
+.sm-btn { flex: 1; height: 42px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+.sm-btn:active { transform: scale(0.97); }
+.sm-btn.primary { background: #4AB8EB; color: #FFFFFF; }
+.sm-btn.primary:hover { background: #3DA0D4; }
+.sm-btn.danger { background: #FFEBEE; color: #E74C3C; }
+.sm-btn.ghost { background: #F0F6FA; color: #546E7A; }
+.sm-status { font-size: 12px; margin-top: 10px; padding: 6px 10px; border-radius: 8px; display: none; }
+.sm-status.show { display: block; }
+.sm-status.ok { background: #E8F5E9; color: #2ECC71; }
+.sm-status.err { background: #FFEBEE; color: #E74C3C; }
+
+/* ── Gear Icon ── */
+.header-gear { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 4px; transition: 0.2s; line-height: 1; flex-shrink: 0; }
+.header-gear:hover { color: #FFFFFF; transform: rotate(30deg); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+
+<div class="paper-plane pp1"><svg viewBox="0 0 24 24"><path d="M21 4.5l-19 7 7 3 3 7 9-17zM10 14l-2-5 7-4-5 9z"/></svg></div>
+<div class="paper-plane pp2"><svg viewBox="0 0 24 24"><path d="M21 4.5l-19 7 7 3 3 7 9-17zM10 14l-2-5 7-4-5 9z"/></svg></div>
+<div class="paper-plane pp3"><svg viewBox="0 0 24 24"><path d="M21 4.5l-19 7 7 3 3 7 9-17zM10 14l-2-5 7-4-5 9z"/></svg></div>
+<div class="paper-plane pp4"><svg viewBox="0 0 24 24"><path d="M21 4.5l-19 7 7 3 3 7 9-17zM10 14l-2-5 7-4-5 9z"/></svg></div>
+
+<div class="chat-container" id="app">
+  <div class="header">
+    <div class="header-icon">✈️</div>
+    <div class="header-text">
+      <div class="header-title">SkyWing Chat</div>
+      <div class="header-sub">Your friendly travel assistant</div>
+      <div class="header-cd" id="headerCountdown"></div>
+    </div>
+    <div class="header-badge" id="headerBadge">● ONLINE</div>
+    <button class="header-gear" id="gearBtn" title="AI Settings">⚙️</button>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-modal">
+      <div class="sm-title">🤖 AI Chat Setup</div>
+      <div class="sm-desc">Enter your <strong>Google AI Studio</strong> API key to enable AI-powered chat. Get one free at <strong>aistudio.google.com</strong> → "Get API key".<br><br>No key? No problem — the bot still works with all structured features.</div>
+      <input class="sm-input" id="apiKeyInput" type="password" placeholder="Paste your API key here">
+      <div class="sm-actions">
+        <button class="sm-btn primary" id="saveKeyBtn">Save</button>
+        <button class="sm-btn danger" id="clearKeyBtn">Clear</button>
+        <button class="sm-btn ghost" id="closeSettingsBtn">Close</button>
+      </div>
+      <div class="sm-status" id="keyStatus"></div>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="typing-indicator" id="typingIndicator">
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  </div>
+
+  <div class="quick-reply-tray" id="qrTray"></div>
+
+  <div class="input-bar">
+    <button class="mic-btn" id="micBtn" title="Voice input">🎤</button>
+    <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+    <button class="send-btn" id="sendBtn">➤</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── DOM ──
+  const mEl = document.getElementById('chatMessages');
+  const iEl = document.getElementById('chatInput');
+  const sBtn = document.getElementById('sendBtn');
+  const tEl = document.getElementById('typingIndicator');
+  const qEl = document.getElementById('qrTray');
+  const micBtn = document.getElementById('micBtn');
+
+  // ── State ──
+  const S = { IDLE:0, AWAIT_REF:1, AWAIT_SEAT_BK:2, AWAIT_SEAT_SEL:3 };
+  let state = S.IDLE;
+  let ctx = {};
+  let busy = false;
+
+  // ── Voice State ──
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let isListening = false;
+  let voiceTriggered = false;
+  const synth = window.speechSynthesis;
+  let voicesReady = false;
+
+  function scrollB() { requestAnimationFrame(() => { mEl.scrollTop = mEl.scrollHeight; }); }
+  function slp(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── Messages ──
+  function addMsg(content, type) {
+    const el = document.createElement('div');
+    el.className = 'message ' + type;
+    if (typeof content === 'string') el.innerHTML = content;
+    else el.appendChild(content);
+    mEl.appendChild(el);
+    scrollB();
+  }
+
+  function makeBotWrap() {
+    const wrap = document.createElement('div');
+    wrap.className = 'message bot';
+    const av = document.createElement('div');
+    av.className = 'bot-avatar';
+    av.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 4.5l-19 7 7 3 3 7 9-17zM10 14l-2-5 7-4-5 9z"/></svg>';
+    wrap.appendChild(av);
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    wrap.bubble = bubble;
+    wrap.appendChild(bubble);
+    return wrap;
+  }
+
+  function botMsg(html, opts = {}) {
+    const wrap = makeBotWrap();
+    const bubble = wrap.bubble;
+    if (opts.tw && typeof html === 'string' && !/<(?:div|img|svg|table|button)/.test(html)) {
+      const textSpan = document.createElement('span');
+      textSpan.className = 'tw-text';
+      bubble.appendChild(textSpan);
+      const cursor = document.createElement('span');
+      cursor.className = 'tw-cursor';
+      cursor.textContent = '|';
+      bubble.appendChild(cursor);
+      mEl.appendChild(wrap);
+      scrollB();
+      typewriteInto(textSpan, html, cursor);
+    } else {
+      bubble.innerHTML = html;
+      mEl.appendChild(wrap);
+      scrollB();
+    }
+    if (voiceTriggered && opts.speak !== false && !/<(?:div|img|svg|table|button|input)/.test(html)) {
+      const plain = stripHtml(html);
+      if (plain) { speakText(plain); voiceTriggered = false; }
+    }
+    return wrap;
+  }
+
+  async function typewriteInto(span, html, cursor) {
+    const cleaned = html.replace(/<br\s*\/?>/gi, '\u23CE');
+    const temp = document.createElement('div');
+    temp.innerHTML = cleaned;
+    const text = temp.textContent.replace(/\u23CE/g, '\n');
+    const chars = [...text];
+    for (let i = 0; i < chars.length; i++) {
+      if (chars[i] === '\n') {
+        span.innerHTML += '<br>';
+      } else {
+        span.textContent += chars[i];
+      }
+      scrollB();
+      await slp(25 + Math.random() * 18);
+    }
+    if (cursor) cursor.remove();
+    span.innerHTML = html;
+  }
+
+  function confetti() {
+    const colors = ['#FF7A2F','#4AB8EB','#2ECC71','#F1C40F','#E74C3C','#9B59B6','#1ABC9C'];
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    const shapes = ['■','●','▲','★'];
+    for (let i = 0; i < 50; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = (Math.random() * 100) + '%';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.width = (Math.random() * 8 + 4) + 'px';
+      piece.style.height = (Math.random() * 8 + 4) + 'px';
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+      piece.style.animationDelay = (Math.random() * 0.8) + 's';
+      container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 4000);
+  }
+
+  function burstPlane() {
+    const plane = document.createElement('div');
+    plane.className = 'plane-burst';
+    plane.textContent = '✈️';
+    const rect = sBtn.getBoundingClientRect();
+    plane.style.left = (rect.left + rect.width / 2 - 11) + 'px';
+    plane.style.top = (rect.top + rect.height / 2 - 11) + 'px';
+    document.body.appendChild(plane);
+    setTimeout(() => plane.remove(), 1000);
+  }
+
+  function shakeEl(el) {
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 500);
+  }
+
+  function ripple(e, el) {
+    const rect = el.getBoundingClientRect();
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    const size = Math.max(rect.width, rect.height);
+    r.style.width = r.style.height = size + 'px';
+    r.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    r.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    el.appendChild(r);
+    setTimeout(() => r.remove(), 700);
+  }
+
+  // ── Voice ──
+  function stripHtml(html) {
+    const t = document.createElement('div');
+    t.innerHTML = html;
+    return t.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  function speakText(text, cb) {
+    if (!synth || !text) { if (cb) cb(); return; }
+    synth.cancel();
+    const utt = new SpeechSynthesisUtterance(text.substring(0, 300));
+    utt.lang = 'en-US';
+    utt.rate = 1.0;
+    utt.pitch = 1.05;
+    const voices = synth.getVoices();
+    const en = voices.find(v => v.lang.startsWith('en') && /Samantha|Alex|Google US|Microsoft/.test(v.name));
+    if (en) utt.voice = en;
+    const avatars = document.querySelectorAll('.bot-avatar');
+    const badge = document.querySelector('.header-badge');
+    utt.onstart = () => {
+      avatars.forEach(a => a.classList.add('speaking'));
+      if (badge) { badge.textContent = '🔊 SPEAKING'; badge.classList.add('speaking'); }
+    };
+    utt.onend = () => {
+      avatars.forEach(a => a.classList.remove('speaking'));
+      if (badge) { badge.textContent = '● ONLINE'; badge.classList.remove('speaking'); }
+      if (cb) cb();
+    };
+    utt.onerror = () => {
+      avatars.forEach(a => a.classList.remove('speaking'));
+      if (badge) { badge.textContent = '● ONLINE'; badge.classList.remove('speaking'); }
+      if (cb) cb();
+    };
+    synth.speak(utt);
+  }
+
+  function initSpeech() {
+    if (!SpeechRecognition) { micBtn.style.display = 'none'; return; }
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.onresult = (e) => {
+      let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      }
+      if (final) {
+        iEl.value = final;
+        stopListening();
+        voiceTriggered = true;
+        handleInput(final);
+      } else {
+        iEl.value = e.results[e.results.length - 1][0].transcript;
+      }
+    };
+    recognition.onerror = (ev) => {
+      stopListening();
+      if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
+        botMsg(`🎤 Sorry, voice error: ${ev.error}. Try typing?`);
+      }
+    };
+    recognition.onend = () => stopListening();
+  }
+
+  function startListening() {
+    if (!recognition || isListening) return;
+    try {
+      recognition.start();
+      isListening = true;
+      micBtn.classList.add('listening');
+      iEl.placeholder = '🎤 Listening...';
+      iEl.focus();
+    } catch (_) {}
+  }
+
+  function stopListening() {
+    if (recognition) try { recognition.stop(); } catch (_) {}
+    isListening = false;
+    micBtn.classList.remove('listening', 'processing');
+    iEl.placeholder = 'Type a message...';
+  }
+
+  // ── Boarding Pass ──
+  function generateBoardingPass(info) {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [200, 100] });
+      const dark = '#1A2A3A', white = '#FFFFFF', blue = '#4AB8EB', gray = '#ECEFF1';
+
+      doc.setFillColor(74, 184, 235);
+      doc.rect(0, 0, 200, 100, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(8, 8, 184, 84, 6, 6, 'F');
+
+      doc.setFillColor(26, 42, 58);
+      doc.roundedRect(8, 8, 184, 20, { tl: 6, tr: 6, bl: 0, br: 0 }, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.text('✈  SKYWING', 18, 22);
+      doc.setFontSize(8);
+      doc.text('BOARDING PASS', 172, 22, { align: 'right' });
+
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineDashPattern([2, 2]);
+      doc.line(8, 52, 192, 52);
+
+      doc.setTextColor(26, 42, 58);
+      doc.setFontSize(36);
+      doc.text(info.flight, 18, 44);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(info.from, 18, 52);
+      doc.setFontSize(14);
+      doc.text('→', 58, 52);
+      doc.setFontSize(10);
+      doc.text(info.to, 72, 52);
+
+      doc.setFontSize(8);
+      doc.text(`Date: ${info.date}`, 120, 38);
+      doc.text(`Time: ${info.time}`, 120, 46);
+      doc.text(`Gate: ${info.gate}`, 120, 54);
+
+      doc.setFontSize(18);
+      doc.setTextColor(26, 42, 58);
+      doc.text(info.name, 18, 74);
+
+      doc.setFontSize(9);
+      doc.setTextColor(140, 140, 140);
+      doc.text(`Booking: ${info.ref}`, 18, 82);
+      doc.text(`Seat: ${info.seat}`, 18, 90);
+
+      // QR Code
+      const qrData = `${info.flight}/${info.ref}/${info.seat}`;
+      const qr = qrcode(0, 'M');
+      qr.addData(qrData);
+      qr.make();
+      const cs = 3, mg = 2, mc = qr.getModuleCount(), sz = mc * cs + mg * 2;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = sz;
+      const c2 = cv.getContext('2d');
+      c2.fillStyle = white;
+      c2.fillRect(0, 0, sz, sz);
+      c2.fillStyle = dark;
+      for (let r = 0; r < mc; r++)
+        for (let c = 0; c < mc; c++)
+          if (qr.isDark(r, c)) c2.fillRect(c * cs + mg, r * cs + mg, cs, cs);
+      doc.addImage(cv.toDataURL('image/png'), 'PNG', 148, 60, 32, 32);
+
+      doc.setTextColor(180, 180, 180);
+      doc.setFontSize(7);
+      doc.text(`Boarding 13:45  •  Gate closes 14:15  •  Seat ${info.seat}`, 100, 96, { align: 'center' });
+
+      doc.save(`boarding-pass-${info.flight}.pdf`);
+      return true;
+    } catch(e) {
+      console.warn('PDF error:', e);
+      return false;
+    }
+  }
+
+  async function doBP() {
+    await typing(800);
+    const ok = generateBoardingPass({
+      name: 'Chris Gomes',
+      ref: ctx.bk || 'ABC123',
+      flight: 'SK456',
+      from: 'Bangkok',
+      to: 'Singapore',
+      date: '30 Jun 2026',
+      time: '14:30',
+      gate: 'B12',
+      seat: ctx.selSeat || '12A'
+    });
+    if (ok) {
+      botMsg('📄 Your boarding pass has been downloaded!<br><span class="c-badge">✅ PDF Saved</span>');
+    } else {
+      botMsg('❌ Couldn\'t generate the PDF. Try again?');
+    }
+    setQR(backQR());
+  }
+
+  // ── Flight Tracker ──
+  const FlightTracker = {
+    data: null,
+    flights: null,
+    refreshCount: 0,
+
+    _rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; },
+
+    _addMins(t, m) {
+      const [h, mn] = t.split(':').map(Number);
+      const d = new Date(2026,5,30, h, mn + m);
+      return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    },
+
+    _statusLabel(s, d) {
+      const map = { 'ot':'🟢 On Time','dl':`🟡 Delayed ${d}min`,'bo':'🔵 Boarding','dp':'🟣 Departed','ar':'🟢 Arrived' };
+      return map[s] || s;
+    },
+
+    generate() {
+      const now = new Date();
+      const depTime = new Date(2026,5,30, 14, 30);
+      const minsSinceDep = (now - depTime) / 60000;
+      let delay, status;
+      if (minsSinceDep < -120) { delay = 0; status = 'ot'; }
+      else if (minsSinceDep < -60) { delay = this._rand(0,8); status = delay > 3 ? 'dl' : 'ot'; }
+      else if (minsSinceDep < -15) { delay = this._rand(2,15); status = 'dl'; }
+      else if (minsSinceDep < 0) { delay = this._rand(0,5); status = 'bo'; }
+      else if (minsSinceDep < 45) { delay = this._rand(0,8); status = 'dp'; }
+      else { delay = this._rand(0,15); status = 'ar'; }
+
+      const gates = ['B12','B7','C3','A9','B4','C8'];
+      const positions = ['Gulf of Thailand','South China Sea','Approach SIN','Taxiing','Gate B12'];
+      const weather = [
+        { temp: 32, cond:'Partly cloudy', icon:'⛅' },
+        { temp: 30, cond:'Light rain', icon:'🌦️' },
+        { temp: 33, cond:'Sunny', icon:'☀️' },
+        { temp: 31, cond:'Thunderstorms', icon:'⛈️' },
+      ];
+
+      this.data = {
+        flight: 'SK456',
+        from: 'Bangkok', fromIata: 'BKK',
+        to: 'Singapore', toIata: 'SIN',
+        scheduledDep: '14:30', scheduledArr: '17:45',
+        actualDep: this._addMins('14:30', delay),
+        actualArr: this._addMins('17:45', delay),
+        delay, status,
+        gate: gates[minsSinceDep > 0 ? Math.floor(minsSinceDep / 30) % gates.length : 0],
+        altitude: status === 'dp' || status === 'ar' ? this._rand(0, 38000) : 0,
+        position: status === 'dp' ? positions[this._rand(0,2)] : status === 'ar' ? positions[3] : positions[0],
+        weather: weather[this._rand(0, weather.length-1)],
+        lastUpdated: Date.now()
+      };
+      return this.data;
+    },
+
+    generateFlights() {
+      const bases = [
+        { f:'SK456', ff:'BKK', tt:'SIN', t:'14:30' },
+        { f:'SK201', ff:'BKK', tt:'HKG', t:'15:00' },
+        { f:'SK789', ff:'BKK', tt:'NRT', t:'15:30' },
+        { f:'SK302', ff:'BKK', tt:'ICN', t:'16:00' },
+        { f:'SK555', ff:'BKK', tt:'SYD', t:'16:30' },
+        { f:'SK108', ff:'BKK', tt:'DEL', t:'17:00' },
+      ];
+      this.flights = bases.map(b => {
+        const delay = Math.random() < 0.3 ? this._rand(5, 25) : 0;
+        const ss = delay > 0 ? 'dl' : Math.random() < 0.2 ? 'bo' : 'ot';
+        return {
+          flight: b.f, from: b.ff, to: b.tt,
+          time: this._addMins(b.t, delay),
+          scheduled: b.t, delay,
+          gate: ['B12','C3','A8','D5','E2','C7'][bases.indexOf(b)],
+          status: ss
+        };
+      });
+      return this.flights;
+    },
+
+    refresh() {
+      this.refreshCount++;
+      if (this.data) {
+        this.data.delay = Math.max(0, this.data.delay + this._rand(-2, 3));
+        this.data.actualDep = this._addMins('14:30', this.data.delay);
+        this.data.actualArr = this._addMins('17:45', this.data.delay);
+        if (this.data.status === 'ot' && this.data.delay > 3) this.data.status = 'dl';
+        else if (this.data.status === 'dl' && this.data.delay <= 2) this.data.status = 'ot';
+        this.data.altitude = this._rand(0, 40000);
+        this.data.lastUpdated = Date.now();
+      }
+      if (this.flights) {
+        this.flights.forEach(f => {
+          if (Math.random() < 0.2) f.gate = ['B12','C3','A8','D5','E2','C7'][this._rand(0,5)];
+        });
+      }
+    },
+
+    formatStatus(s, d) {
+      return this._statusLabel(s, d);
+    }
+  };
+
+  function flightCardHTML(d) {
+    const statusClass = d.status;
+    const statusLabel = FlightTracker.formatStatus(d.status, d.delay);
+    const depTime = d.delay > 0 ? `${d.scheduledDep} <span class="fd-delay">+${d.delay}min</span>` : d.scheduledDep;
+    const alt = d.altitude > 0 ? `${(d.altitude/1000).toFixed(0)},000 ft` : '—';
+    const ago = Math.floor((Date.now() - d.lastUpdated) / 1000);
+    return `<div class="flight-detail">
+      <div class="fd-row">
+        <span class="fd-flight">✈️ ${d.flight}</span>
+        <span class="fd-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="fd-route">
+        <div class="fd-city">
+          <div class="fd-iata">${d.fromIata}</div>
+          <div class="fd-name">${d.from}</div>
+          <div class="fd-time">${depTime}</div>
+        </div>
+        <div class="fd-arrow">→</div>
+        <div class="fd-city" style="text-align:right">
+          <div class="fd-iata">${d.toIata}</div>
+          <div class="fd-name">${d.to}</div>
+          <div class="fd-time">${d.actualArr}</div>
+        </div>
+      </div>
+      <div class="fd-grid">
+        <div class="fd-item"><span>🚪 Gate</span><span class="fd-val">${d.gate}</span></div>
+        <div class="fd-item"><span>📍 Altitude</span><span class="fd-val">${alt}</span></div>
+        <div class="fd-item"><span>🌡️ ${d.to}</span><span class="fd-val">${d.weather.icon} ${d.weather.temp}°C</span></div>
+        <div class="fd-item"><span>📡 Position</span><span class="fd-val">${d.position}</span></div>
+      </div>
+      <div class="fd-foot">
+        <span>⏱️ ${ago}s ago</span>
+        <span>🔄 refreshed ${FlightTracker.refreshCount}x</span>
+      </div>
+    </div>`;
+  }
+
+  function departBoardHTML(flights) {
+    let rows = '';
+    flights.forEach(f => {
+      const st = f.status;
+      const timeHTML = f.delay > 0 ? `${f.scheduled} <span class="fd-delay" style="font-size:10px">+${f.delay}</span>` : f.scheduled;
+      rows += `<div class="db-row">
+        <span class="db-flight">${f.flight}</span>
+        <span class="db-route">${f.from} → ${f.to}</span>
+        <span class="db-time">${f.time}</span>
+        <span class="db-gate">${f.gate}</span>
+        <span class="db-status ${st}">${FlightTracker.formatStatus(st, f.delay)}</span>
+      </div>`;
+    });
+    return `<div class="dep-board">
+      <div class="db-header">
+        <span>🛫 Departures</span>
+        <span style="font-size:11px;color:#78909C;font-weight:400">${new Date().toLocaleDateString()}</span>
+      </div>
+      <div class="db-row db-header-row">
+        <span>Flight</span><span>Route</span><span style="text-align:center">Time</span><span style="text-align:center">Gate</span><span style="text-align:right">Status</span>
+      </div>
+      ${rows}
+    </div>`;
+  }
+
+  async function startStatus() {
+    await typing(800);
+    botMsg(`<div class="scan-line"><span class="scan-dot"></span> Scanning live flight data...</div>`);
+    await slp(1200);
+    const d = FlightTracker.generate();
+    botMsg(flightCardHTML(d));
+    setQR([
+      { lbl: '🔄 Refresh', a: 'refresh' },
+      { lbl: '🔔 Notify', a: 'notif' },
+      { lbl: '🗺️ Terminal map', a: 'tmap' },
+      { lbl: '📋 Departures', a: 'deps' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  async function doRefresh() {
+    await typing(600);
+    FlightTracker.refresh();
+    const d = FlightTracker.data || FlightTracker.generate();
+    botMsg(flightCardHTML(d));
+    setQR([
+      { lbl: '🔄 Refresh', a: 'refresh' },
+      { lbl: '🔔 Notify', a: 'notif' },
+      { lbl: '🗺️ Terminal map', a: 'tmap' },
+      { lbl: '📋 Departures', a: 'deps' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  async function doDepartures() {
+    await typing(600);
+    const flights = FlightTracker.flights || FlightTracker.generateFlights();
+    botMsg(departBoardHTML(flights));
+    setQR([
+      { lbl: '🔄 Refresh', a: 'refresh' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  function usrMsg(text) {
+    const el = document.createElement('div');
+    el.className = 'message user';
+    el.textContent = text;
+    mEl.appendChild(el);
+    scrollB();
+  }
+
+  // ── Typing ──
+  async function typing(ms) {
+    tEl.classList.add('show');
+    scrollB();
+    await slp(ms);
+    tEl.classList.remove('show');
+  }
+
+  // ── Quick Replies ──
+  function setQR(btns) {
+    qEl.innerHTML = '';
+    if (!btns || !btns.length) { qEl.classList.remove('show'); return; }
+    qEl.classList.add('show');
+    btns.forEach((b, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'qr-btn' + (b.main ? ' qr-btn-main' : '');
+      btn.innerHTML = b.lbl;
+      btn.style.animation = `msgIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both`;
+      btn.style.animationDelay = (i * 50) + 'ms';
+      btn.addEventListener('click', (e) => { ripple(e, btn); onQR(b); });
+      qEl.appendChild(btn);
+    });
+  }
+
+  // ── Countdown ──
+  function startCountdown() {
+    const el = document.getElementById('headerCountdown');
+    if (!el) return;
+    const dep = new Date(2026, 5, 30, 14, 30).getTime();
+    function tick() {
+      const diff = dep - Date.now();
+      if (diff <= 0) { el.textContent = '🛫 Departed'; return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      el.textContent = `🛫 ${h}h ${m}m ${s}s`;
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ── Card HTML ──
+  function tripCardHTML() {
+    return `<div class="trip-card"><div class="tc-header">🧳 Your Trip to Bangkok</div><div class="tc-sub">Jun 30 – Jul 5, 2026 · 6 days</div>
+    <div class="tc-section"><div class="tc-sh">✈️ Flight</div><div class="tc-item"><strong>SK456</strong> BKK → SIN · Jun 30, 14:30</div><div class="tc-item">Gate B12 · Seat 12A</div></div>
+    <div class="tc-section"><div class="tc-sh">🏨 Hotel</div><div class="tc-item"><strong>Grande Centre Point</strong> Sukhumvit Soi 15</div><div class="tc-item">Check-in Jul 1 · 2 nights · Deluxe Room</div></div>
+    <div class="tc-section"><div class="tc-sh">🎯 Top Activities</div><div class="tc-item">🏛️ Grand Palace & Wat Phra Kaew</div><div class="tc-item">🛶 Damnoen Saduak Floating Market</div><div class="tc-item">🍜 Street Food Tour (Chinatown)</div><div class="tc-item">🛍️ Chatuchak Weekend Market</div><div class="tc-item" style="margin-top:4px"><span class="tc-badge">⭐ Recommended</span></div></div></div>`;
+  }
+
+  function guideCardHTML() {
+    return `<div class="guide-card"><div class="gc-header">📖 Bangkok Travel Guide</div><div class="gc-sub">Everything you need to know</div>
+    <div class="gc-section"><div class="gc-sh">🌤️ Essentials</div><div class="gc-row"><span class="gc-icon">🌡️</span><span class="gc-label">Weather</span><span>32°C, Rainy season (Jun)</span></div><div class="gc-row"><span class="gc-icon">💱</span><span class="gc-label">Currency</span><span>THB (฿) · 1 USD ≈ 35 ฿</span></div><div class="gc-row"><span class="gc-icon">🔌</span><span class="gc-label">Plugs</span><span>Type A/B/C · 220V</span></div></div>
+    <div class="gc-section"><div class="gc-sh">🍜 Must-Eat</div><div class="gc-tip">• <strong>Pad Thai</strong> @ Thipsamai (Old Town)</div><div class="gc-tip">• <strong>Tom Yum Kung</strong> @ Baan Khanitha</div><div class="gc-tip">• <strong>Mango Sticky Rice</strong> @ Mae Varee</div><div class="gc-tip">• <strong>Khao Soi</strong> @ Ongtong Khao Soi</div></div>
+    <div class="gc-section"><div class="gc-sh">🏛️ Attractions</div><div class="gc-tip">• 🏛️ Grand Palace & Wat Phra Kaew (Entry 500฿)</div><div class="gc-tip">• 🛶 Damnoen Saduak Floating Market</div><div class="gc-tip">• 🛍️ Chatuchak Weekend Market (Sat-Sun)</div><div class="gc-tip">• 🌃 Khao San Road (backpacker vibe)</div><div class="gc-tip">• 🛕 Wat Arun (Temple of Dawn)</div></div>
+    <div class="gc-section"><div class="gc-sh">📦 Packing Tips</div><div class="gc-tip">• 👕 Light breathable clothes (32°C+)</div><div class="gc-tip">• 🧥 Rain jacket / umbrella (monsoon season)</div><div class="gc-tip">• 👖 Modest attire covering shoulders/knees for temples</div><div class="gc-tip">• 🧴 Sunscreen SPF50+ & insect repellent</div><div class="gc-tip">• 🔌 Universal power adapter</div></div></div>`;
+  }
+
+  function loungeCardHTML() {
+    return `<div class="lounge-card"><div class="lc-header"><span class="lc-title">🛋️ SkyWing Lounge</span><span class="lc-badge">PREMIUM</span></div>
+    <div class="lc-flight">✈️ SK456 · Jun 30 · Bangkok → Singapore</div>
+    <div class="lc-grid"><div class="lc-item"><div class="lc-lbl">Location</div><div class="lc-val">Terminal 1, 3F</div></div><div class="lc-item"><div class="lc-lbl">Near Gate</div><div class="lc-val">B12 (5 min)</div></div><div class="lc-item"><div class="lc-lbl">Hours</div><div class="lc-val">05:00 – 23:00</div></div><div class="lc-item"><div class="lc-lbl">Capacity</div><div class="lc-val">120 guests</div></div></div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:6px">🍽️ Snacks & drinks · 📶 Free Wi-Fi · 🔌 Charging · 🚿 Showers</div>
+    <div class="lc-bar"><div class="lc-fill"></div></div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px">✓ Pass active</div></div>`;
+  }
+
+  function rideCardHTML() {
+    return `<div class="ride-card"><div class="rc-header"><span>🚗 Ride to Airport</span><span style="font-size:12px;color:#78909C;font-weight:400">BKK</span></div>
+    <div class="rc-route"><div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div class="rc-dot from"></div><div class="rc-line"></div><div class="rc-dot to"></div></div>
+    <div><div><strong>Grande Centre Point</strong> · Sukhumvit Soi 15</div><div style="color:#B0BEC5;font-size:11px">↓ 24 km · ~35 min</div><div><strong>Suvarnabhumi Airport</strong> · Terminal 1</div></div></div>
+    <div class="rc-opt"><div class="rc-info"><span class="rc-name">🚗 GrabCar</span><span class="rc-desc">4 seats · AC</span></div><div style="display:flex;align-items:center;gap:8px"><span class="rc-price">฿450</span><button class="rc-book" data-ride="grab">Book</button></div></div>
+    <div class="rc-opt"><div class="rc-info"><span class="rc-name">🚕 Taxi</span><span class="rc-desc">Metered · airport surcharge</span></div><div style="display:flex;align-items:center;gap:8px"><span class="rc-price">฿350</span><button class="rc-book" data-ride="taxi">Book</button></div></div>
+    <div class="rc-opt"><div class="rc-info"><span class="rc-name">🚐 GrabXL</span><span class="rc-desc">6 seats · extra luggage</span></div><div style="display:flex;align-items:center;gap:8px"><span class="rc-price">฿550</span><button class="rc-book" data-ride="grabxl">Book</button></div></div>
+    <div class="rc-opt"><div class="rc-info"><span class="rc-name">🚌 Airport Bus</span><span class="rc-desc">S1 line · every 20min</span></div><div style="display:flex;align-items:center;gap:8px"><span class="rc-price">฿60</span><button class="rc-book" data-ride="bus">Book</button></div></div>
+    <div class="rc-foot">⏱️ Est. 35 min · 🛣️ Via expressway</div></div>`;
+  }
+
+  async function startTrip() {
+    await typing(800);
+    botMsg(tripCardHTML());
+    setQR([
+      { lbl: '🛋️ Lounge Access', a: 'lounge' },
+      { lbl: '🚗 Ride to Airport', a: 'ride' },
+      { lbl: '📖 Destination Guide', a: 'guide' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  async function doLounge() {
+    await typing(600);
+    botMsg(loungeCardHTML());
+    setQR(backQR());
+  }
+
+  async function doRide() {
+    await typing(600);
+    botMsg(rideCardHTML());
+    setQR(backQR());
+  }
+
+  async function doGuide() {
+    await typing(600);
+    botMsg(guideCardHTML());
+    setQR([{ lbl: '🧳 Back to Trip', a: 'trip' }, { lbl: '⬅️ Back', a: 'back' }]);
+  }
+
+  async function doRideBook(type) {
+    await typing(1200);
+    const names = { grab:'GrabCar', taxi:'Taxi', grabxl:'GrabXL', bus:'Airport Bus' };
+    const arrives = { grab:'4 min', taxi:'7 min', grabxl:'6 min', bus:'12 min' };
+    const name = names[type] || 'Ride';
+    botMsg(`🚗 <strong>${name}</strong> is on the way! 🎉<br><br>📍 Pickup: Grande Centre Point, Sukhumvit Soi 15<br>📍 Drop: Suvarnabhumi Airport (BKK)<br>⏱️ Arrives in <strong>${arrives[type] || '5 min'}</strong><br>💳 Paid via card · ฿${type === 'bus' ? '60' : type === 'taxi' ? '350' : type === 'grabxl' ? '550' : '450'}<br><br><span class="c-badge">✅ Ride booked</span>`);
+    setQR(backQR());
+  }
+
+  function mainQR() {
+    return [
+      { lbl: '✈️ Flight Status', a: 'status' },
+      { lbl: '💺 Change Seat', a: 'seat' },
+      { lbl: '🧳 Baggage', a: 'baggage' },
+      { lbl: '✅ Check-in', a: 'checkin' },
+      { lbl: '🧳 Trip Overview', a: 'trip' }
+    ];
+  }
+
+  function backQR() { return [{ lbl: '⬅️ Back', a: 'back' }]; }
+
+  // ── QR Handler ──
+  async function onQR(b) {
+    if (busy) return;
+    busy = true;
+    try {
+      if (b.a === 'back') { reset(); busy = false; return; }
+      if (b.a === 'status') { usrMsg(b.lbl); await startStatus(); }
+      else if (b.a === 'seat') { usrMsg(b.lbl); await startSeat(); }
+      else if (b.a === 'baggage') { usrMsg(b.lbl); await startBag(); }
+      else if (b.a === 'checkin') { usrMsg(b.lbl); await startCheckin(); }
+      else if (b.a === 'booking') { usrMsg(b.lbl); await startBook(); }
+      else if (b.a === 'resend') { usrMsg(b.lbl); await doResend(); }
+      else if (b.a === 'txtpnr') { usrMsg(b.lbl); await doTxtPNR(); }
+      else if (b.a === 'cnf_seat') { usrMsg(b.lbl); await doCnfSeat(); }
+      else if (b.a === 'try_s') { usrMsg(b.lbl); await doTryS(); }
+      else if (b.a === 'add20') { usrMsg(b.lbl); await doAddBag(20,35); }
+      else if (b.a === 'add32') { usrMsg(b.lbl); await doAddBag(32,55); }
+      else if (b.a === 'notif') { usrMsg(b.lbl); await doNotif(); }
+      else if (b.a === 'tmap') { usrMsg(b.lbl); await doTMap(); }
+      else if (b.a === 'remind') { usrMsg(b.lbl); await doRemind(); }
+      else if (b.a === 'cknow') { usrMsg(b.lbl); await doCkNow(); }
+      else if (b.a === 'bp') { usrMsg(b.lbl); await doBP(); }
+      else if (b.a === 'refresh') { usrMsg(b.lbl); await doRefresh(); }
+      else if (b.a === 'deps') { usrMsg(b.lbl); await doDepartures(); }
+      else if (b.a === 'trip') { usrMsg(b.lbl); await startTrip(); }
+      else if (b.a === 'lounge') { usrMsg(b.lbl); await doLounge(); }
+      else if (b.a === 'ride') { usrMsg(b.lbl); await doRide(); }
+      else if (b.a === 'guide') { usrMsg(b.lbl); await doGuide(); }
+      else if (b.a === 'ride_book') { usrMsg(b.lbl); await doRideBook(b.val); }
+      else if (b.val) { await processInput(b.val); }
+    } finally {
+      busy = false;
+    }
+  }
+
+  // ── Intent ──
+  function detect(text) {
+    const t = text.toLowerCase();
+    if (/booking|ref|pnr|confirm|reservation|abc123|sk456/.test(t)) return 'book';
+    if (/seat|change seat|12a|window|aisle/.test(t)) return 'seat';
+    if (/baggage|bag|luggage|cabin|kg|hold|carry/.test(t)) return 'bag';
+    if (/status|delay|on time|gate|depart|arrive/.test(t)) return 'status';
+    if (/check|checkin|check-in|boarding pass/.test(t)) return 'check';
+    return null;
+  }
+
+  // ── Core processor (no busy check) ──
+  async function processInput(text) {
+    usrMsg(text);
+    iEl.value = '';
+
+    if (state === S.AWAIT_REF) { await handleRef(text); return; }
+    if (state === S.AWAIT_SEAT_BK) { await handleSeatBk(text); return; }
+    if (state === S.AWAIT_SEAT_SEL) { await handleSeatSel(text); return; }
+
+    const intent = detect(text);
+    if (intent === 'book') await startBook();
+    else if (intent === 'seat') await startSeat();
+    else if (intent === 'bag') await startBag();
+    else if (intent === 'status') await startStatus();
+    else if (intent === 'check') await startCheckin();
+    else await fallback();
+  }
+
+  async function handleInput(text) {
+    if (busy) return;
+    busy = true;
+    try { await processInput(text); } finally { busy = false; }
+  }
+
+  // ── Booking Flow ──
+  async function startBook() {
+    state = S.AWAIT_REF;
+    await typing(800);
+    botMsg('Sure! I can help with your booking. ✈️<br><br>Please enter your <strong>booking reference</strong> (e.g., ABC123 or SK456).', { tw: true });
+    setQR([]);
+  }
+
+  async function handleRef(ref) {
+    const r = ref.trim().toUpperCase();
+    await typing(1400);
+    state = S.IDLE;
+    botMsg(`I've found your booking <strong>${r}</strong> to Bangkok! ✉️<br><br>I've resent the confirmation to your email. Need anything else?`, { tw: true });
+    setQR([
+      { lbl: '📧 Resend to email', a: 'resend' },
+      { lbl: '📱 Text PNR', a: 'txtpnr' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  async function doResend() {
+    await typing(1000);
+    botMsg('📧 Done! Confirmation resent to <strong>chris@email.com</strong>. Check your inbox (and spam folder!).');
+    setQR(backQR());
+  }
+
+  async function doTxtPNR() {
+    await typing(1000);
+    botMsg('📱 Sent! Your PNR has been texted to <strong>+65 **** 1234</strong>.');
+    setQR(backQR());
+  }
+
+  // ── Seat Flow ──
+  let seatSelectedEl = null;
+
+  async function startSeat() {
+    state = S.AWAIT_SEAT_BK;
+    await typing(800);
+    botMsg('Let\'s get you a better seat! 💺<br><br>First, what\'s your <strong>booking reference</strong>?', { tw: true });
+    setQR([]);
+  }
+
+  async function handleSeatBk(ref) {
+    ctx.bk = ref.trim().toUpperCase();
+    await typing(1000);
+    botMsg(`Got it! Here's the seat map for <strong>${ctx.bk}</strong> (SK456 → Bangkok).`);
+    // Remove old seat map if exists
+    const old = document.querySelector('.msg-seatmap');
+    if (old) old.remove();
+    seatSelectedEl = null;
+    renderSeatMap();
+    state = S.AWAIT_SEAT_SEL;
+    setQR([]);
+  }
+
+  function renderSeatMap() {
+    // Layout: A B C | D E F
+    const cols = ['A','B','C','','D','E','F'];
+    // Taken seats
+    const taken = ['1B','1C','1D','2A','2B','3A','3C','3E','4B','4C','4D','5A','5E','5F','6B','6C','6D','7B','7C','7D','8A','8E','9C','9D','10A','10F','11B','12C'];
+    const your = '7A';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-seatmap';
+    wrap.style.cssText = 'margin-top:4px;width:100%;';
+
+    const grid = document.createElement('div');
+    grid.className = 'seat-map';
+
+    for (let r = 1; r <= 12; r++) {
+      for (let c = 0; c < 7; c++) {
+        const col = cols[c];
+        // Aisle column
+        if (col === '') {
+          const el = document.createElement('div');
+          el.className = 'seat aisle';
+          grid.appendChild(el);
+          continue;
+        }
+        const seatId = r + col;
+        const el = document.createElement('div');
+        el.className = 'seat';
+        if (taken.includes(seatId)) {
+          el.className = 'seat taken';
+          el.textContent = '▢';
+        } else if (seatId === your) {
+          el.className = 'seat yours';
+          el.textContent = '●';
+        } else {
+          el.className = 'seat available';
+          el.textContent = seatId;
+          el.dataset.seat = seatId;
+          el.addEventListener('click', function(e) {
+            if (seatSelectedEl) {
+              const prev = seatSelectedEl.dataset.seat;
+              seatSelectedEl.className = 'seat available';
+              seatSelectedEl.textContent = prev || '';
+            }
+            this.className = 'seat available selected';
+            this.textContent = '✓ ' + this.dataset.seat;
+            seatSelectedEl = this;
+            ctx.selSeat = this.dataset.seat;
+            setQR([
+              { lbl: '💳 Confirm ' + ctx.selSeat, a: 'cnf_seat' },
+              { lbl: '🔄 Try another', a: 'try_s' },
+              { lbl: '⬅️ Back', a: 'back' }
+            ]);
+          });
+        }
+        grid.appendChild(el);
+      }
+    }
+
+    wrap.appendChild(grid);
+
+    const legend = document.createElement('div');
+    legend.className = 'seat-legend';
+    legend.innerHTML = '<span><span class="swatch" style="background:#E8F5E9;border:1px solid #C8E6C9"></span> Available</span><span><span class="swatch" style="background:#ECEFF1"></span> Taken</span><span><span class="swatch" style="background:#4AB8EB"></span> Your seat</span><span><span class="swatch" style="background:#FF7A2F"></span> Selected</span>';
+    wrap.appendChild(legend);
+
+    const wrap2 = makeBotWrap();
+    wrap2.className = 'message bot msg-seatmap';
+    wrap2.bubble.style.padding = '6px 12px 12px';
+    wrap2.bubble.appendChild(wrap);
+    mEl.appendChild(wrap2);
+    scrollB();
+  }
+
+  async function doCnfSeat() {
+    await typing(1200);
+    botMsg(`<strong>${escapeHtml(ctx.selSeat || '12A')}</strong> is yours! ✅ Seat changed successfully.<br><span class="c-badge">✅ Confirmed</span>`, { tw: true });
+    confetti();
+    state = S.IDLE;
+    seatSelectedEl = null;
+    setQR(backQR());
+  }
+
+  async function doTryS() {
+    await typing(600);
+    botMsg('Sure! Tap any other <strong>green</strong> seat to try.');
+    if (seatSelectedEl) {
+      const prev = seatSelectedEl.dataset.seat;
+      seatSelectedEl.className = 'seat available';
+      seatSelectedEl.textContent = prev || '';
+      seatSelectedEl = null;
+    }
+    ctx.selSeat = null;
+    setQR([]);
+  }
+
+  async function handleSeatSel(text) {
+    const m = text.toUpperCase().match(/(\d{1,2}[A-G])/);
+    if (m) {
+      const seat = m[1];
+      const el = document.querySelector(`.seat.available[data-seat="${seat}"]`);
+      if (el) { el.click(); return; }
+      else {
+        await typing(800);
+        botMsg(`Sorry, seat <strong>${seat}</strong> isn't available. Try a green one! 🟢`);
+        return;
+      }
+    }
+    await typing(600);
+    botMsg('Just tap a seat on the map above, or type a seat number like <strong>12A</strong>.');
+  }
+
+  // ── Baggage Flow ──
+  async function startBag() {
+    await typing(1000);
+    const html = `<div class="baggage-card">
+      <div class="br"><span class="bl">🧳 Cabin</span><span class="bv">1 bag (7kg)</span></div>
+      <div class="br"><span class="bl">🛄 Hold</span><span class="bv" style="color:#E74C3C;">Not included</span></div>
+      <div class="br"><span class="bl">💰 Add 20kg</span><span class="bv"><span class="price">$35</span> <button class="add-bag-btn" data-kg="20" data-price="35">+ Add</button></span></div>
+      <div class="br"><span class="bl">💰 Add 32kg</span><span class="bv"><span class="price">$55</span> <button class="add-bag-btn" data-kg="32" data-price="55">+ Add</button></span></div>
+      <div style="font-size:11px;color:#90A4AE;margin-top:6px;">📏 Dimensions: 40×30×20cm</div>
+    </div>`;
+    botMsg(html);
+    setQR([
+      { lbl: '🧳 Add 20kg – $35', a: 'add20' },
+      { lbl: '🧳 Add 32kg – $55', a: 'add32' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  async function doAddBag(kg, price) {
+    await typing(1200);
+    botMsg(`Done! <strong>${kg}kg</strong> extra baggage added to your booking for <strong>$${price}</strong>. 🛄<br><span class="c-badge">✅ Added to booking</span>`, { tw: true });
+    confetti();
+    setQR([{ lbl: '🧳 Add more', a: 'baggage' }, { lbl: '⬅️ Back', a: 'back' }]);
+  }
+
+  async function doNotif() {
+    await typing(800);
+    botMsg('🔔 We\'ll text you if anything changes for SK456. You\'re covered!', { tw: true });
+    setQR(backQR());
+  }
+
+  async function doTMap() {
+    await typing(1000);
+    botMsg('🗺️ <strong>Terminal 1 Guide</strong><br><br>🛂 Check-in Row 4<br>🛍️ Shopping past security<br>🍜 Food court near Gate B8<br>🚶 Gate B12: ~8 min walk<br><br><em>Pro tip: arrive 2h before departure!</em>');
+    setQR(backQR());
+  }
+
+  // ── Check-in Flow ──
+  async function startCheckin() {
+    const dep = new Date('2026-06-30T14:30:00');
+    const now = new Date();
+    const hrs = (dep - now) / (1000*60*60);
+
+    if (hrs > 24) {
+      await typing(1000);
+      const h = Math.floor(hrs);
+      botMsg(`<div class="checkin-card"><div class="ci">⏳</div><div class="ct">Check-in opens soon!</div><div class="cs">Opens <strong>24h before</strong> departure.<br>About <strong>${h}h</strong> from now.<br>📅 ${dep.toDateString()} at 14:30</div></div>`);
+      setQR([
+        { lbl: '⏰ Remind me', a: 'remind' },
+        { lbl: '⬅️ Back', a: 'back' }
+      ]);
+    } else {
+      await typing(800);
+      botMsg(`<div class="checkin-card"><div class="ci">✅</div><div class="ct">Check-in is OPEN!</div><div class="cs">You can check in now for SK456.<br>Gate B12 | Depart 14:30</div></div>`);
+      setQR([
+        { lbl: '✅ Check in now', a: 'cknow' },
+        { lbl: '⬅️ Back', a: 'back' }
+      ]);
+    }
+  }
+
+  async function doRemind() {
+    await typing(800);
+    botMsg('⏰ Reminder set! We\'ll nudge you 24h before departure. 😊', { tw: true });
+    setQR(backQR());
+  }
+
+  async function doCkNow() {
+    await typing(1500);
+    botMsg('✅ You\'re checked in! 🎉<br><br>🪪 <strong>Seat:</strong> 12A (window)<br>📱 <strong>Boarding pass:</strong> Sent to your phone<br>🛄 <strong>Bag drop:</strong> Counter B4<br><br><span class="c-badge">✅ Checked in</span>', { tw: true });
+    confetti();
+    setQR([
+      { lbl: '📄 Boarding Pass (PDF)', a: 'bp' },
+      { lbl: '⬅️ Back', a: 'back' }
+    ]);
+  }
+
+  // ── AI / Gemini ──
+  let geminiKey = localStorage.getItem('geminiKey') || '';
+  let aiBadge = null;
+
+  function updateAIBadge() {
+    const badge = document.getElementById('headerBadge');
+    if (badge) {
+      if (geminiKey) { badge.textContent = '● AI'; badge.classList.add('speaking'); }
+      else { badge.textContent = '● ONLINE'; badge.classList.remove('speaking'); }
+    }
+  }
+
+  async function askGemini(userMsg) {
+    const body = {
+      contents: [{
+        role: 'user', parts: [{ text: `You are SkyWing Chat, a friendly airline assistant for SkyWing Airlines. 
+Be concise (2-4 sentences), warm, and helpful.
+SkyWing flight SK456 goes Bangkok → Singapore on Jun 30, 2026 at 14:30, Gate B12.
+If the user asks about booking, seats, baggage, check-in, or flight status, suggest tapping the relevant option.
+If they ask general travel or flight questions, answer helpfully.
+Do not make up specific booking details for individuals.` }]
+      }, {
+        role: 'user', parts: [{ text: userMsg }]
+      }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+    };
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      const err = data.error?.message || `HTTP ${resp.status}`;
+      if (resp.status === 403 || resp.status === 400) {
+        geminiKey = '';
+        localStorage.removeItem('geminiKey');
+        updateAIBadge();
+      }
+      throw new Error(err);
+    }
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Hmm, I got nothing. Try again!';
+  }
+
+  // ── Fallback ──
+  async function fallback() {
+    if (geminiKey) {
+      const lastMsg = iEl.value.trim();
+      if (lastMsg) {
+        await typing(1200);
+        try {
+          const reply = await askGemini(lastMsg);
+          voiceTriggered = true;
+          botMsg(reply, { tw: true });
+          setQR(mainQR());
+        } catch(e) {
+          botMsg(`⚠️ AI error: ${e.message}. Falling back to menu.`);
+          setQR(mainQR());
+        }
+        return;
+      }
+    }
+    await typing(800);
+    botMsg('I\'m here to help with your flight! 😊<br><br>Try:<br>🧳 <strong>Trip Overview</strong><br>✈️ <strong>Flight status</strong><br>💺 <strong>Change seat</strong><br>🧳 <strong>Baggage info</strong><br>✅ <strong>Check-in</strong>', { tw: true });
+    setQR(mainQR());
+  }
+
+  // ── Reset ──
+  function reset() {
+    state = S.IDLE;
+    ctx = {};
+    if (seatSelectedEl) {
+      const prev = seatSelectedEl.dataset.seat;
+      seatSelectedEl.className = 'seat available';
+      seatSelectedEl.textContent = prev || '';
+      seatSelectedEl = null;
+    }
+    welcome();
+  }
+
+  function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  // ── Welcome ──
+  function welcome() {
+    setQR(mainQR());
+  }
+
+  // ── Init ──
+  async function init() {
+    initSpeech();
+    startCountdown();
+    updateAIBadge();
+    if (synth) synth.getVoices(); // prime voice list
+    await slp(400);
+    botMsg('Hi! I\'m your <strong>SkyWing assistant</strong> 🛩️<br><br>I can help with:<br>🧳 Trip overview<br>✈️ Flight status<br>💺 Change seat<br>🧳 Baggage info<br>✅ Check-in<br><br><em>What can I help you with?</em>', { tw: true });
+    welcome();
+    scrollB();
+  }
+
+  // Delegated clicks: baggage add + ride booking
+  mEl.addEventListener('click', function(ev) {
+    const bag = ev.target.closest('.add-bag-btn');
+    if (bag) { const kg = +bag.dataset.kg; onQR({ lbl: `🧳 Add ${kg}kg`, a: kg === 20 ? 'add20' : 'add32' }); return; }
+    const ride = ev.target.closest('.rc-book');
+    if (ride && !ride.disabled) {
+      ride.disabled = true;
+      ride.textContent = '✅';
+      const names = { grab:'🚗 GrabCar', taxi:'🚕 Taxi', grabxl:'🚐 GrabXL', bus:'🚌 Airport Bus' };
+      const rideName = names[ride.dataset.ride] || 'Ride';
+      onQR({ lbl: rideName, a: 'ride_book', val: ride.dataset.ride });
+    }
+  });
+
+  micBtn.addEventListener('click', () => {
+    if (isListening) { stopListening(); return; }
+    startListening();
+  });
+
+  sBtn.addEventListener('click', (e) => {
+    const t = iEl.value.trim();
+    if (!t || busy) { if (!t) shakeEl(iEl); return; }
+    burstPlane();
+    ripple(e, sBtn);
+    handleInput(t);
+  });
+  iEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); const t = iEl.value.trim(); if (!t || busy) { if (!t) shakeEl(iEl); return; } burstPlane(); handleInput(t); }
+  });
+
+  // ── Settings Modal ──
+  const overlay = document.getElementById('settingsOverlay');
+  const keyInput = document.getElementById('apiKeyInput');
+  const keyStatus = document.getElementById('keyStatus');
+
+  document.getElementById('gearBtn').addEventListener('click', () => {
+    keyInput.value = geminiKey;
+    keyStatus.className = 'sm-status';
+    keyStatus.style.display = 'none';
+    overlay.classList.add('show');
+    setTimeout(() => keyInput.focus(), 100);
+  });
+
+  document.getElementById('closeSettingsBtn').addEventListener('click', () => overlay.classList.remove('show'));
+
+  document.getElementById('saveKeyBtn').addEventListener('click', () => {
+    const key = keyInput.value.trim();
+    if (!key) { keyStatus.textContent = 'Please paste a valid API key.'; keyStatus.className = 'sm-status show err'; return; }
+    geminiKey = key;
+    localStorage.setItem('geminiKey', key);
+    updateAIBadge();
+    keyStatus.textContent = '✅ AI key saved! Chat now uses Gemini AI.';
+    keyStatus.className = 'sm-status show ok';
+    setTimeout(() => overlay.classList.remove('show'), 1200);
+  });
+
+  document.getElementById('clearKeyBtn').addEventListener('click', () => {
+    geminiKey = '';
+    localStorage.removeItem('geminiKey');
+    keyInput.value = '';
+    updateAIBadge();
+    keyStatus.textContent = '🗑️ Key cleared. Structured mode active.';
+    keyStatus.className = 'sm-status show ok';
+  });
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+
+  init();
+})();
+</script>
+</body>
+</html>
