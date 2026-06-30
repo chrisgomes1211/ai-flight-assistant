@@ -24,11 +24,9 @@ An interactive, all-in-one airline chatbot — no backend, no frameworks, just a
 
 Open [`index.html`](index.html) in any browser. That's it.
 
-### Enable AI (optional)
+### AI is built-in
 
-1. Go to [aistudio.google.com](https://aistudio.google.com) → "Get API key" (free, no credit card)
-2. Tap the ⚙️ gear in the chatbot header
-3. Paste your key → Save
+Gemini AI is already enabled with a pre-configured key — no setup needed. Just open the page and chat.
 
 ## Tech stack
 

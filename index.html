@@ -390,30 +390,7 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
 .rc-book:disabled { opacity: 0.4; cursor: default; }
 .rc-foot { font-size: 11px; color: #90A4AE; margin-top: 8px; padding-top: 6px; border-top: 1px solid #F0F4F8; }
 
-/* ── Settings ── */
-.settings-overlay { display: none; position: fixed; inset: 0; background: rgba(26,42,58,0.4); z-index: 9999; align-items: center; justify-content: center; }
-.settings-overlay.show { display: flex; }
-.settings-modal { background: #FFFFFF; border-radius: 20px; padding: 24px; width: 340px; max-width: 90vw; box-shadow: 0 20px 60px rgba(26,42,58,0.2); }
-.sm-title { font-size: 18px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; }
-.sm-desc { font-size: 13px; color: #78909C; margin-bottom: 16px; line-height: 1.5; }
-.sm-input { width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid #DEE2E6; padding: 0 14px; font-size: 14px; outline: none; transition: 0.2s; box-sizing: border-box; }
-.sm-input:focus { border-color: #4AB8EB; }
-.sm-input::placeholder { color: #B0BEC5; }
-.sm-actions { display: flex; gap: 8px; margin-top: 14px; }
-.sm-btn { flex: 1; height: 42px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.15s; }
-.sm-btn:active { transform: scale(0.97); }
-.sm-btn.primary { background: #4AB8EB; color: #FFFFFF; }
-.sm-btn.primary:hover { background: #3DA0D4; }
-.sm-btn.danger { background: #FFEBEE; color: #E74C3C; }
-.sm-btn.ghost { background: #F0F6FA; color: #546E7A; }
-.sm-status { font-size: 12px; margin-top: 10px; padding: 6px 10px; border-radius: 8px; display: none; }
-.sm-status.show { display: block; }
-.sm-status.ok { background: #E8F5E9; color: #2ECC71; }
-.sm-status.err { background: #FFEBEE; color: #E74C3C; }
 
-/* ── Gear Icon ── */
-.header-gear { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 4px; transition: 0.2s; line-height: 1; flex-shrink: 0; }
-.header-gear:hover { color: #FFFFFF; transform: rotate(30deg); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -433,24 +410,9 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
       <div class="header-sub">Your friendly travel assistant</div>
       <div class="header-cd" id="headerCountdown"></div>
     </div>
-    <div class="header-badge" id="headerBadge">● ONLINE</div>
-    <button class="header-gear" id="gearBtn" title="AI Settings">⚙️</button>
+    <div class="header-badge" id="headerBadge">● AI</div>
   </div>
 
-  <!-- Settings Modal -->
-  <div class="settings-overlay" id="settingsOverlay">
-    <div class="settings-modal">
-      <div class="sm-title">🤖 AI Chat Setup</div>
-      <div class="sm-desc">Enter your <strong>Google AI Studio</strong> API key to enable AI-powered chat. Get one free at <strong>aistudio.google.com</strong> → "Get API key".<br><br>No key? No problem — the bot still works with all structured features.</div>
-      <input class="sm-input" id="apiKeyInput" type="password" placeholder="Paste your API key here">
-      <div class="sm-actions">
-        <button class="sm-btn primary" id="saveKeyBtn">Save</button>
-        <button class="sm-btn danger" id="clearKeyBtn">Clear</button>
-        <button class="sm-btn ghost" id="closeSettingsBtn">Close</button>
-      </div>
-      <div class="sm-status" id="keyStatus"></div>
-    </div>
-  </div>
 
   <div class="chat-messages" id="chatMessages"></div>
 
@@ -641,12 +603,12 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
     };
     utt.onend = () => {
       avatars.forEach(a => a.classList.remove('speaking'));
-      if (badge) { badge.textContent = '● ONLINE'; badge.classList.remove('speaking'); }
+      if (badge) { badge.textContent = '● AI'; badge.classList.remove('speaking'); }
       if (cb) cb();
     };
     utt.onerror = () => {
       avatars.forEach(a => a.classList.remove('speaking'));
-      if (badge) { badge.textContent = '● ONLINE'; badge.classList.remove('speaking'); }
+      if (badge) { badge.textContent = '● AI'; badge.classList.remove('speaking'); }
       if (cb) cb();
     };
     synth.speak(utt);
@@ -1451,16 +1413,7 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
   }
 
   // ── AI / Gemini ──
-  let geminiKey = localStorage.getItem('geminiKey') || '';
-  let aiBadge = null;
-
-  function updateAIBadge() {
-    const badge = document.getElementById('headerBadge');
-    if (badge) {
-      if (geminiKey) { badge.textContent = '● AI'; badge.classList.add('speaking'); }
-      else { badge.textContent = '● ONLINE'; badge.classList.remove('speaking'); }
-    }
-  }
+  const GEMINI_KEY = 'AQ.Ab8RN6JNltvY3CX_vzSWejgC9WfyPZaT806ZAguPs9KqPAJPww';
 
   async function askGemini(userMsg) {
     const body = {
@@ -1476,45 +1429,37 @@ Do not make up specific booking details for individuals.` }]
       }],
       generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
     };
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`, {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     const data = await resp.json();
     if (!resp.ok) {
-      const err = data.error?.message || `HTTP ${resp.status}`;
-      if (resp.status === 403 || resp.status === 400) {
-        geminiKey = '';
-        localStorage.removeItem('geminiKey');
-        updateAIBadge();
-      }
-      throw new Error(err);
+      throw new Error(data.error?.message || `HTTP ${resp.status}`);
     }
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Hmm, I got nothing. Try again!';
   }
 
   // ── Fallback ──
   async function fallback() {
-    if (geminiKey) {
-      const lastMsg = iEl.value.trim();
-      if (lastMsg) {
-        await typing(1200);
-        try {
-          const reply = await askGemini(lastMsg);
-          voiceTriggered = true;
-          botMsg(reply, { tw: true });
-          setQR(mainQR());
-        } catch(e) {
-          botMsg(`⚠️ AI error: ${e.message}. Falling back to menu.`);
-          setQR(mainQR());
-        }
-        return;
-      }
+    const lastMsg = iEl.value.trim();
+    if (!lastMsg) {
+      await typing(800);
+      botMsg('I\'m here to help with your flight! 😊<br><br>Try:<br>🧳 <strong>Trip Overview</strong><br>✈️ <strong>Flight status</strong><br>💺 <strong>Change seat</strong><br>🧳 <strong>Baggage info</strong><br>✅ <strong>Check-in</strong>', { tw: true });
+      setQR(mainQR());
+      return;
     }
-    await typing(800);
-    botMsg('I\'m here to help with your flight! 😊<br><br>Try:<br>🧳 <strong>Trip Overview</strong><br>✈️ <strong>Flight status</strong><br>💺 <strong>Change seat</strong><br>🧳 <strong>Baggage info</strong><br>✅ <strong>Check-in</strong>', { tw: true });
-    setQR(mainQR());
+    await typing(1200);
+    try {
+      const reply = await askGemini(lastMsg);
+      voiceTriggered = true;
+      botMsg(reply, { tw: true });
+      setQR(mainQR());
+    } catch(e) {
+      botMsg(`⚠️ AI error: ${e.message}. Try again later.`);
+      setQR(mainQR());
+    }
   }
 
   // ── Reset ──
@@ -1545,7 +1490,6 @@ Do not make up specific booking details for individuals.` }]
   async function init() {
     initSpeech();
     startCountdown();
-    updateAIBadge();
     if (synth) synth.getVoices(); // prime voice list
     await slp(400);
     botMsg('Hi! I\'m your <strong>SkyWing assistant</strong> 🛩️<br><br>I can help with:<br>🧳 Trip overview<br>✈️ Flight status<br>💺 Change seat<br>🧳 Baggage info<br>✅ Check-in<br><br><em>What can I help you with?</em>', { tw: true });
@@ -1583,42 +1527,7 @@ Do not make up specific booking details for individuals.` }]
     if (e.key === 'Enter') { e.preventDefault(); const t = iEl.value.trim(); if (!t || busy) { if (!t) shakeEl(iEl); return; } burstPlane(); handleInput(t); }
   });
 
-  // ── Settings Modal ──
-  const overlay = document.getElementById('settingsOverlay');
-  const keyInput = document.getElementById('apiKeyInput');
-  const keyStatus = document.getElementById('keyStatus');
-
-  document.getElementById('gearBtn').addEventListener('click', () => {
-    keyInput.value = geminiKey;
-    keyStatus.className = 'sm-status';
-    keyStatus.style.display = 'none';
-    overlay.classList.add('show');
-    setTimeout(() => keyInput.focus(), 100);
-  });
-
-  document.getElementById('closeSettingsBtn').addEventListener('click', () => overlay.classList.remove('show'));
-
-  document.getElementById('saveKeyBtn').addEventListener('click', () => {
-    const key = keyInput.value.trim();
-    if (!key) { keyStatus.textContent = 'Please paste a valid API key.'; keyStatus.className = 'sm-status show err'; return; }
-    geminiKey = key;
-    localStorage.setItem('geminiKey', key);
-    updateAIBadge();
-    keyStatus.textContent = '✅ AI key saved! Chat now uses Gemini AI.';
-    keyStatus.className = 'sm-status show ok';
-    setTimeout(() => overlay.classList.remove('show'), 1200);
-  });
-
-  document.getElementById('clearKeyBtn').addEventListener('click', () => {
-    geminiKey = '';
-    localStorage.removeItem('geminiKey');
-    keyInput.value = '';
-    updateAIBadge();
-    keyStatus.textContent = '🗑️ Key cleared. Structured mode active.';
-    keyStatus.className = 'sm-status show ok';
-  });
-
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+  // ── Note: Gemini AI key is built-in — no setup needed ──
 
   init();
 })();
