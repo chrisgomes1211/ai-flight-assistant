@@ -1160,7 +1160,7 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
     else if (intent === 'bag') await startBag();
     else if (intent === 'status') await startStatus();
     else if (intent === 'check') await startCheckin();
-    else await fallback();
+    else await fallback(text);
   }
 
   async function handleInput(text) {
@@ -1442,8 +1442,8 @@ Do not make up specific booking details for individuals.` }]
   }
 
   // ── Fallback ──
-  async function fallback() {
-    const lastMsg = iEl.value.trim();
+  async function fallback(text) {
+    const lastMsg = (text || iEl.value).trim();
     if (!lastMsg) {
       await typing(800);
       botMsg('I\'m here to help with your flight! 😊<br><br>Try:<br>🧳 <strong>Trip Overview</strong><br>✈️ <strong>Flight status</strong><br>💺 <strong>Change seat</strong><br>🧳 <strong>Baggage info</strong><br>✅ <strong>Check-in</strong>', { tw: true });
