@@ -444,10 +444,11 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
   const micBtn = document.getElementById('micBtn');
 
   // ── State ──
-  const S = { IDLE:0, AWAIT_REF:1, AWAIT_SEAT_BK:2, AWAIT_SEAT_SEL:3 };
+  const S = { IDLE:0, AWAIT_REF:1, AWAIT_SEAT_BK:2, AWAIT_SEAT_SEL:3, AWAIT_STATUS_REF:4 };
   let state = S.IDLE;
   let ctx = {};
   let busy = false;
+  let lastStatusRef = '';
 
   // ── Voice State ──
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -762,6 +763,22 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
   }
 
   // ── Flight Tracker ──
+  function seedRand(seed) {
+    let s = Math.abs(hashStr(seed)) || 1;
+    return function(min, max) {
+      s = (s * 1664525 + 1013904223) | 0;
+      const r = ((s >>> 0) / 0xFFFFFFFF);
+      if (min === undefined) return r;
+      return Math.floor(r * (max - min + 1)) + min;
+    };
+  }
+
+  function hashStr(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+    return Math.abs(h);
+  }
+
   const FlightTracker = {
     data: null,
     flights: null,
@@ -843,10 +860,10 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
 
     refresh() {
       this.refreshCount++;
-      if (this.data) {
+      if (this.data && !this.data.isLive) {
         this.data.delay = Math.max(0, this.data.delay + this._rand(-2, 3));
-        this.data.actualDep = this._addMins('14:30', this.data.delay);
-        this.data.actualArr = this._addMins('17:45', this.data.delay);
+        this.data.actualDep = this._addMins(this.data.scheduledDep || '14:30', this.data.delay);
+        this.data.actualArr = this._addMins(this.data.scheduledArr || '17:45', this.data.delay);
         if (this.data.status === 'ot' && this.data.delay > 3) this.data.status = 'dl';
         else if (this.data.status === 'dl' && this.data.delay <= 2) this.data.status = 'ot';
         this.data.altitude = this._rand(0, 40000);
@@ -859,10 +876,72 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
       }
     },
 
+    generateFromRef(ref) {
+      const rng = seedRand(ref);
+      const routes = [
+        { f:'BKK', t:'SIN', ft:'Bangkok', tt:'Singapore', sd:'14:30', sa:'17:45' },
+        { f:'BKK', t:'HKG', ft:'Bangkok', tt:'Hong Kong', sd:'08:15', sa:'12:30' },
+        { f:'BKK', t:'NRT', ft:'Bangkok', tt:'Tokyo', sd:'23:45', sa:'07:30' },
+        { f:'BKK', t:'ICN', ft:'Bangkok', tt:'Seoul', sd:'09:30', sa:'16:45' },
+        { f:'SIN', t:'KUL', ft:'Singapore', tt:'Kuala Lumpur', sd:'10:00', sa:'11:15' },
+        { f:'BKK', t:'DEL', ft:'Bangkok', tt:'Delhi', sd:'07:00', sa:'10:30' },
+        { f:'BKK', t:'SYD', ft:'Bangkok', tt:'Sydney', sd:'22:00', sa:'09:30' },
+      ];
+      const route = routes[rng(0, routes.length-1)];
+      const delay = rng(0, 25);
+      const status = delay > 10 ? 'dl' : delay > 0 && Math.random() > 0.5 ? 'dl' : 'ot';
+      const gates = ['B12','B7','C3','A9','B4','C8','D5','E2'];
+      const isCode = /^[A-Z]{2}\d/.test(ref.toUpperCase());
+      this.data = {
+        flight: isCode ? ref.toUpperCase() : ('SK' + (rng(100, 999))),
+        from: route.ft, fromIata: route.f,
+        to: route.tt, toIata: route.t,
+        scheduledDep: route.sd, scheduledArr: route.sa,
+        actualDep: this._addMins(route.sd, delay),
+        actualArr: this._addMins(route.sa, delay),
+        delay, status,
+        gate: gates[rng(0, gates.length-1)],
+        altitude: status === 'dp' || status === 'ar' ? rng(0, 40000) : 0,
+        position: rng(0, 1) ? 'En route' : 'Approach',
+        weather: { temp: rng(27, 35), cond:['Sunny','Partly cloudy','Light rain','Thunderstorms'][rng(0,3)], icon:['☀️','⛅','🌦️','⛈️'][rng(0,3)] },
+        lastUpdated: Date.now()
+      };
+      return this.data;
+    },
+
     formatStatus(s, d) {
       return this._statusLabel(s, d);
     }
   };
+
+  async function lookupOpenSky(callsign) {
+    try {
+      const ac = callsign.trim().toUpperCase();
+      const resp = await fetch('https://opensky-network.org/api/states/all', { signal: AbortSignal.timeout(5000) });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      const states = data.states || [];
+      const match = states.find(s => s[1] && s[1].trim() === ac);
+      if (!match) return null;
+      const [icao, cs, origin, pos, baroAlt, vel, heading, vertRate, squawk, spi, posSrc, category] = match;
+      const status = baroAlt > 1000 ? 'dp' : 'ot';
+      return {
+        flight: cs,
+        from: 'Live', fromIata: origin || '???',
+        to: 'Live', toIata: '???',
+        scheduledDep: '--:--', scheduledArr: '--:--',
+        actualDep: '--:--', actualArr: '--:--',
+        delay: 0, status,
+        gate: 'N/A',
+        altitude: Math.round(baroAlt || 0),
+        position: pos ? `${pos[1].toFixed(2)}°, ${pos[0].toFixed(2)}°` : 'Unknown',
+        weather: { temp: '--', cond:'Live ADS-B feed', icon:'📡' },
+        lastUpdated: Date.now(),
+        isLive: true,
+        liveData: { vel: Math.round(vel || 0), heading: Math.round(heading || 0), vertRate: Math.round(vertRate || 0) }
+      };
+    } catch { return null; }
+  }
 
   function flightCardHTML(d) {
     const statusClass = d.status;
@@ -870,9 +949,12 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
     const depTime = d.delay > 0 ? `${d.scheduledDep} <span class="fd-delay">+${d.delay}min</span>` : d.scheduledDep;
     const alt = d.altitude > 0 ? `${(d.altitude/1000).toFixed(0)},000 ft` : '—';
     const ago = Math.floor((Date.now() - d.lastUpdated) / 1000);
+    const liveBadge = d.isLive ? '<span class="fd-status dp" style="font-size:10px;margin-left:6px">🔴 LIVE</span>' : '';
+    const velHTML = d.liveData ? `<div class="fd-item"><span>💨 Speed</span><span class="fd-val">${d.liveData.vel} kts</span></div>` : '';
+    const hdgHTML = d.liveData ? `<div class="fd-item"><span>🧭 Heading</span><span class="fd-val">${d.liveData.heading}°</span></div>` : '';
     return `<div class="flight-detail">
       <div class="fd-row">
-        <span class="fd-flight">✈️ ${d.flight}</span>
+        <span class="fd-flight">✈️ ${d.flight}${liveBadge}</span>
         <span class="fd-status ${statusClass}">${statusLabel}</span>
       </div>
       <div class="fd-route">
@@ -891,12 +973,14 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
       <div class="fd-grid">
         <div class="fd-item"><span>🚪 Gate</span><span class="fd-val">${d.gate}</span></div>
         <div class="fd-item"><span>📍 Altitude</span><span class="fd-val">${alt}</span></div>
-        <div class="fd-item"><span>🌡️ ${d.to}</span><span class="fd-val">${d.weather.icon} ${d.weather.temp}°C</span></div>
-        <div class="fd-item"><span>📡 Position</span><span class="fd-val">${d.position}</span></div>
+        ${velHTML}
+        ${hdgHTML}
+        <div class="fd-item"><span>🌡️ ${d.isLive ? 'Destination' : d.to}</span><span class="fd-val">${d.weather.icon} ${d.weather.temp}°C</span></div>
+        <div class="fd-item"><span>📡 Position</span><span class="fd-val">${d.isLive ? d.position : d.position}</span></div>
       </div>
       <div class="fd-foot">
         <span>⏱️ ${ago}s ago</span>
-        <span>🔄 refreshed ${FlightTracker.refreshCount}x</span>
+        ${d.isLive ? '<span>🛰️ ADS-B</span>' : `<span>🔄 refreshed ${FlightTracker.refreshCount}x</span>`}
       </div>
     </div>`;
   }
@@ -926,33 +1010,59 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
     </div>`;
   }
 
-  async function startStatus() {
-    await typing(800);
-    botMsg(`<div class="scan-line"><span class="scan-dot"></span> Scanning live flight data...</div>`);
-    await slp(1200);
-    const d = FlightTracker.generate();
-    botMsg(flightCardHTML(d));
-    setQR([
+  function statusQR() {
+    return [
       { lbl: '🔄 Refresh', a: 'refresh' },
       { lbl: '🔔 Notify', a: 'notif' },
       { lbl: '🗺️ Terminal map', a: 'tmap' },
       { lbl: '📋 Departures', a: 'deps' },
       { lbl: '⬅️ Back', a: 'back' }
-    ]);
+    ];
+  }
+
+  async function startStatus() {
+    state = S.AWAIT_STATUS_REF;
+    await typing(800);
+    botMsg('Please enter your <strong>booking reference</strong> or <strong>flight number</strong>.<br><br>Try: <em>SK456, TG123, ABC789</em> or any flight number for live tracking!', { tw: true });
+    setQR([{ lbl: '⬅️ Back', a: 'back' }]);
+  }
+
+  async function handleStatusRef(ref) {
+    const r = ref.trim().toUpperCase();
+    lastStatusRef = r;
+    state = S.IDLE;
+    await typing(1000);
+    const isFlightNum = /^[A-Z0-9]{2,8}$/.test(r);
+    let liveData = null;
+    if (isFlightNum) {
+      botMsg(`<div class="scan-line"><span class="scan-dot"></span> Looking up <strong>${r}</strong> on live radar...</div>`);
+      await slp(600);
+      liveData = await lookupOpenSky(r);
+    } else {
+      botMsg(`<div class="scan-line"><span class="scan-dot"></span> Retrieving flight for <strong>${r}</strong>...</div>`);
+      await slp(600);
+    }
+    if (liveData) {
+      botMsg(flightCardHTML(liveData));
+    } else {
+      if (isFlightNum) botMsg('ℹ️ Real-time data unavailable. Showing simulated flight.', { tw: true });
+      const d = FlightTracker.generateFromRef(r);
+      botMsg(flightCardHTML(d));
+    }
+    setQR(statusQR());
   }
 
   async function doRefresh() {
     await typing(600);
-    FlightTracker.refresh();
-    const d = FlightTracker.data || FlightTracker.generate();
-    botMsg(flightCardHTML(d));
-    setQR([
-      { lbl: '🔄 Refresh', a: 'refresh' },
-      { lbl: '🔔 Notify', a: 'notif' },
-      { lbl: '🗺️ Terminal map', a: 'tmap' },
-      { lbl: '📋 Departures', a: 'deps' },
-      { lbl: '⬅️ Back', a: 'back' }
-    ]);
+    if (lastStatusRef) {
+      const d = FlightTracker.generateFromRef(lastStatusRef);
+      botMsg(flightCardHTML(d));
+    } else {
+      FlightTracker.refresh();
+      const d = FlightTracker.data || FlightTracker.generate();
+      botMsg(flightCardHTML(d));
+    }
+    setQR(statusQR());
   }
 
   async function doDepartures() {
@@ -1151,6 +1261,7 @@ body { background: linear-gradient(135deg, #e8f0fe 0%, #d4e8f5 100%); display: f
     iEl.value = '';
 
     if (state === S.AWAIT_REF) { await handleRef(text); return; }
+    if (state === S.AWAIT_STATUS_REF) { await handleStatusRef(text); return; }
     if (state === S.AWAIT_SEAT_BK) { await handleSeatBk(text); return; }
     if (state === S.AWAIT_SEAT_SEL) { await handleSeatSel(text); return; }
 
